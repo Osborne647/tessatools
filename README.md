@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# tessacodetools.dev — homepage starter
 
-## Getting Started
+Drop-in files for the Next.js App Router. Everything is a server component
+except `components/HeroTool.tsx`.
 
-First, run the development server:
+## 1. Create the project
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npx create-next-app@latest tessacodetools \
+  --ts --tailwind --app --eslint --import-alias "@/*" --no-src-dir
+cd tessacodetools
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 2. Copy these files in
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Overwrite `app/layout.tsx`, `app/page.tsx`, and `app/globals.css`. The rest are
+new:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+app/globals.css      brand tokens (@theme) + the drift keyframes
+app/layout.tsx       fonts, metadata defaults, header/footer shell
+app/page.tsx         the homepage
+app/sitemap.ts       auto-generated /sitemap.xml
+app/robots.ts        /robots.txt
+lib/site-config.ts   ALL SEO copy for all 10 tools — the one file you edit
+lib/base64.ts        encode/decode logic, framework-free
+components/          Header, Footer, Mark, TriangleField, HeroTool, ToolGrid
+next.config.ts       static export config
+```
 
-## Learn More
+Delete the `app/page.module.css` that create-next-app generates.
 
-To learn more about Next.js, take a look at the following resources:
+## 3. Run it
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run dev      # http://localhost:3000
+npm run build    # static HTML into ./out
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 4. Deploy
 
-## Deploy on Vercel
+Push to GitHub, import the repo at vercel.com, accept the defaults. Point the
+domain at it in Vercel's dashboard.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## How the SEO layer works
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`lib/site-config.ts` is the single source of truth. Each tool carries its own
+`h1`, `metaDescription`, and `faqs`. When you build a tool page, read from
+`getTool(slug)` and emit `toolJsonLd()` + `faqJsonLd()` into script tags. The
+sitemap picks up any tool with `status: "live"` automatically, so shipping a
+tool is: write the page, flip the status, push.
+
+## Next up
+
+`app/tools/base64-encoder/page.tsx` — server component owning the metadata,
+rendering a fuller version of `HeroTool` plus 400-600 words of supporting copy
+and the FAQ block from site-config.
