@@ -68,6 +68,7 @@ export default function RootLayout({
     <html lang="en" className={`${spaceGrotesk.variable} ${dmMono.variable} ${inter.variable}`}>
       <head>
         <GoogleAdsense />
+        <meta name="google-adsense-account" content="ca-pub-9233506803346085" />
       </head>
       <body className="bg-navy font-sans text-white antialiased">
         <Header />
