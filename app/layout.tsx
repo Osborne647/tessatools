@@ -3,7 +3,20 @@ import { Space_Grotesk, DM_Mono, Inter } from "next/font/google";
 import { site } from "@/lib/site-config";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Script from "next/script";
 import "./globals.css";
+
+function GoogleAdsense() {
+  if (process.env.NODE_ENV !== "production") return null;
+  return (
+    <Script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9233506803346085"
+      crossOrigin="anonymous"
+      strategy="afterInteractive"
+    />
+  );
+}
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -25,7 +38,6 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  // Makes every relative URL below (canonical, OG image) absolute.
   metadataBase: new URL(site.url),
   title: {
     default: `${site.name} — Free Developer Tools That Run in Your Browser`,
@@ -54,6 +66,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${dmMono.variable} ${inter.variable}`}>
+      <head>
+        <GoogleAdsense />
+      </head>
       <body className="bg-navy font-sans text-white antialiased">
         <Header />
         {children}
