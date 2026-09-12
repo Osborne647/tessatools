@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { tools } from "@/lib/site-config";
 
-// Facet tints cycle so adjacent tiles differ without any gap or border between
-// them. The grid has no gap on purpose: the tessellation is the separator.
 const FACETS = ["bg-facet-1", "bg-facet-2", "bg-facet-3", "bg-navy"];
 
 export default function ToolGrid() {
@@ -62,8 +60,6 @@ export default function ToolGrid() {
         );
       })}
 
-      {/* 10 tools across 3 columns leaves 2 empty cells, which breaks the
-          tessellation. This tile spans both and closes the pattern. */}
       <div className="flex flex-col gap-6 bg-navy-deep px-6 py-7 sm:col-span-2 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-9">
         <div>
           <span className="font-mono text-[12px] tracking-[0.14em] text-sub">11+</span>

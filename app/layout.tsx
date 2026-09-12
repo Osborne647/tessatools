@@ -5,9 +5,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import "./globals.css";
 
-// next/font self-hosts these at build time: no render-blocking request to
-// Google, no layout shift. Each exposes a CSS variable that globals.css maps
-// onto a Tailwind font utility.
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
@@ -32,7 +29,6 @@ export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
     default: `${site.name} — Free Developer Tools That Run in Your Browser`,
-    // Every child page sets just its own title; this appends the brand.
     template: `%s | ${site.name}`,
   },
   description: site.description,

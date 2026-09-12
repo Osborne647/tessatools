@@ -1,16 +1,7 @@
-// Timestamp conversion with real timezone support and zero dependencies.
-// Everything leans on Intl.DateTimeFormat, which ships the full IANA tz
-// database in every modern browser — no date library needed.
-
 export type Unit = "s" | "ms" | "us" | "ns";
 
 export type Detected = { unit: Unit; ms: number } | null;
 
-/**
- * Figures out which unit a raw number is in by magnitude. A 10-digit value is
- * seconds, 13 is milliseconds, 16 is microseconds, 19 is nanoseconds. Guessing
- * beats asking: nobody wants to pick a radio button before seeing a date.
- */
 export function detectUnit(raw: string): Detected {
   const cleaned = raw.trim().replace(/[_,\s]/g, "");
   if (!/^-?\d+(\.\d+)?$/.test(cleaned)) return null;
@@ -33,7 +24,6 @@ export const UNIT_LABELS: Record<Unit, string> = {
   ns: "nanoseconds",
 };
 
-/** Epoch milliseconds → the six formats people actually need. */
 export function renderAll(ms: number, tz: string) {
   const d = new Date(ms);
 
@@ -58,7 +48,6 @@ export function renderAll(ms: number, tz: string) {
   };
 }
 
-/** "in 3 hours" / "2 days ago", via the built-in Intl.RelativeTimeFormat. */
 export function relativeTime(ms: number, now = Date.now()): string {
   const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
   const diff = ms - now;
@@ -80,15 +69,6 @@ export function relativeTime(ms: number, now = Date.now()): string {
   return "just now";
 }
 
-/**
- * Wall-clock date/time in a given zone → epoch milliseconds.
- *
- * This is the genuinely hard direction. `new Date("2026-03-08T02:30")` is
- * parsed in the *browser's* zone, not the target one, so the naive approach is
- * wrong by the offset difference. We guess, measure the error the guess
- * produces in the target zone, correct, then measure once more to settle DST
- * boundaries where the offset changes between guess and answer.
- */
 export function zonedToEpoch(
   parts: { year: number; month: number; day: number; hour: number; minute: number; second: number },
   tz: string,
@@ -100,11 +80,6 @@ export function zonedToEpoch(
   return guess;
 }
 
-/**
- * Detects a wall-clock time that does not exist in the zone — the hour skipped
- * by a DST spring-forward. Converting such a time silently lands you an hour
- * off, so the tool warns instead of pretending.
- */
 export function isNonexistent(
   parts: { year: number; month: number; day: number; hour: number; minute: number },
   tz: string,
@@ -120,16 +95,12 @@ export function isNonexistent(
   return get("hour") % 24 !== parts.hour || get("minute") !== parts.minute;
 }
 
-/** Parses the loose date strings people actually paste. */
 export function parseDateInput(
   text: string,
   tz: string,
 ): { ms: number; assumedZone: boolean; nonexistent: boolean } | null {
   const s = text.trim();
   if (!s) return null;
-
-  // An explicit offset or Z means the string is already unambiguous — let the
-  // engine handle it and do not apply the selected zone.
   if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(s)) {
     const t = Date.parse(s);
     return Number.isNaN(t) ? null : { ms: t, assumedZone: false, nonexistent: false };
@@ -154,7 +125,6 @@ export function parseDateInput(
     };
   }
 
-  // Fall back to the engine for things like "March 8, 2026 14:30".
   const t = Date.parse(s);
   if (Number.isNaN(t)) return null;
 
@@ -174,7 +144,6 @@ export function parseDateInput(
   };
 }
 
-/** A short, useful zone list plus whatever the visitor's browser reports. */
 export function zoneOptions(): string[] {
   const local = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const base = [
@@ -193,9 +162,6 @@ export function zoneOptions(): string[] {
 
 export const localZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-// ---------------------------------------------------------------------------
-
-/** The zone's UTC offset, in ms, at a specific instant. */
 function offsetMs(at: Date, tz: string): number {
   const p = new Intl.DateTimeFormat("en-US", {
     timeZone: tz,
@@ -209,7 +175,6 @@ function offsetMs(at: Date, tz: string): number {
   }).formatToParts(at);
 
   const get = (t: string) => Number(p.find((x) => x.type === t)?.value);
-  // Intl renders midnight as hour 24 in some engines; normalize it.
   const hour = get("hour") % 24;
 
   const wall = Date.UTC(get("year"), get("month") - 1, get("day"), hour, get("minute"), get("second"));
@@ -228,7 +193,6 @@ function offsetLabel(at: Date, tz: string): string {
   return `${name} · UTC${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
 }
 
-/** ISO 8601 with the zone's own offset, e.g. 2026-09-11T08:42:00-05:00. */
 function isoInZone(at: Date, tz: string): string {
   const mins = Math.round(offsetMs(at, tz) / 60000);
   const shifted = new Date(at.getTime() + mins * 60000);

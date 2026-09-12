@@ -1,8 +1,5 @@
 "use client";
 
-// The full JSON formatter, minifier, and validator. Isolated as the page's
-// only client component.
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   byteLength,
@@ -68,7 +65,6 @@ export default function JsonTool() {
     setInput(await file.text());
   }, []);
 
-  /** Replaces the input with its own formatted output, in place. */
   function applyToInput() {
     if (output) setInput(output);
     inputRef.current?.focus();
@@ -86,7 +82,6 @@ export default function JsonTool() {
 
   const inBytes = byteLength(input);
   const outBytes = byteLength(output);
-  // Only meaningful when minifying: how much the whitespace was costing.
   const saved = inBytes > 0 && outBytes > 0 ? Math.round((1 - outBytes / inBytes) * 100) : 0;
 
   return (
@@ -106,7 +101,6 @@ export default function JsonTool() {
         dragging ? "ring-2 ring-teal" : ""
       }`}
     >
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-7">
         <div className="flex items-center gap-1 bg-navy p-1">
           <button
@@ -187,7 +181,6 @@ export default function JsonTool() {
         </div>
       </div>
 
-      {/* Panes */}
       <div className="grid md:grid-cols-[1fr_auto_1fr]">
         <div className="bg-facet-2">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
@@ -291,8 +284,6 @@ export default function JsonTool() {
 
           <div className="h-[340px] overflow-auto px-5 py-3 sm:px-7">
             {parsed && !parsed.ok ? (
-              // The error panel is the whole reason people use a validator:
-              // show the line, the column, the offending text, and the fix.
               <div className="font-mono text-[13px] leading-relaxed">
                 <p className="text-coral">
                   Line {parsed.error.line}, column {parsed.error.column}

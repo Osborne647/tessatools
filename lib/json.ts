@@ -1,19 +1,11 @@
-// JSON parsing with precise diagnostics. Native JSON.parse throws messages
-// that differ between V8, JavaScriptCore, and SpiderMonkey, and none of them
-// reliably give a line and column. This hand-written parser does, so the tool
-// can point at the exact character that broke.
-
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [k: string]: JsonValue };
 
 export type ParseError = {
   message: string;
   line: number;
   column: number;
-  /** Character offset, for highlighting. */
   index: number;
-  /** The offending line, for showing context. */
   excerpt: string;
-  /** Plain-language nudge toward the fix. */
   hint: string | null;
 };
 
@@ -35,7 +27,6 @@ export function parseJson(text: string): ParseResult {
   }
 }
 
-/** Pretty-print. `indent` of 0 means tabs. */
 export function format(value: JsonValue, indent: number, sortKeys: boolean): string {
   const space = indent === 0 ? "\t" : indent;
   return JSON.stringify(sortKeys ? sortDeep(value) : value, null, space);
@@ -45,7 +36,6 @@ export function minify(value: JsonValue, sortKeys: boolean): string {
   return JSON.stringify(sortKeys ? sortDeep(value) : value);
 }
 
-/** Recursively orders object keys. Arrays keep their order: it is data. */
 export function sortDeep(value: JsonValue): JsonValue {
   if (Array.isArray(value)) return value.map(sortDeep);
   if (value && typeof value === "object") {
@@ -85,8 +75,6 @@ export function stats(value: JsonValue): Stats {
 
 export const byteLength = (text: string) => new TextEncoder().encode(text).length;
 
-// ---------------------------------------------------------------------------
-
 class JsonSyntaxError extends Error {
   constructor(public detail: ParseError) {
     super(detail.message);
@@ -109,8 +97,6 @@ class Parser {
     if (this.s.startsWith("true", this.i)) return this.take(4, true);
     if (this.s.startsWith("false", this.i)) return this.take(5, false);
     if (this.s.startsWith("null", this.i)) return this.take(4, null);
-
-    // The three most common paste-errors get named directly.
     if (c === "'") this.fail("Strings must use double quotes in JSON, not single quotes");
     if (this.s.startsWith("NaN", this.i) || this.s.startsWith("Infinity", this.i)) {
       this.fail("NaN and Infinity are not valid JSON numbers");
@@ -227,7 +213,6 @@ class Parser {
       }
 
       if (c === "\n") this.fail("Unescaped line break in a string — use \\n instead");
-      // Raw control characters are illegal in JSON strings.
       if (c < " ") this.fail("Unescaped control character in a string");
 
       out += c;
@@ -275,8 +260,6 @@ class Parser {
         this.i += 1;
         continue;
       }
-      // Comments are not JSON, but they are the single most common reason a
-      // paste fails, so name them explicitly instead of "unexpected token".
       if (c === "/" && (this.s[this.i + 1] === "/" || this.s[this.i + 1] === "*")) {
         this.fail("Comments are not valid in JSON — strip them, or use JSONC");
       }

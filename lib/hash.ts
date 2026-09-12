@@ -1,10 +1,3 @@
-// Cryptographic hashing, all client-side.
-//
-// The SHA family comes from crypto.subtle, which is hardware-accelerated and
-// already in every browser. MD5 is not in the Web Crypto spec — deliberately,
-// because it is broken — but checking a legacy download checksum is still a
-// real daily task, so it is implemented here in about eighty lines.
-
 export type Algo = "MD5" | "SHA-1" | "SHA-256" | "SHA-384" | "SHA-512";
 
 export const ALGOS: { id: Algo; label: string; bits: number; safe: boolean }[] = [
@@ -17,7 +10,6 @@ export const ALGOS: { id: Algo; label: string; bits: number; safe: boolean }[] =
 
 export type Encoding = "hex" | "base64" | "hex-upper";
 
-/** Digest of a string, in the chosen algorithm. */
 export async function hashText(text: string, algo: Algo): Promise<Uint8Array> {
   return hashBytes(new TextEncoder().encode(text), algo);
 }
@@ -28,10 +20,6 @@ export async function hashBytes(bytes: Uint8Array, algo: Algo): Promise<Uint8Arr
   return new Uint8Array(buf);
 }
 
-/**
- * HMAC keyed digest. Not available for MD5 here, since crypto.subtle has no
- * MD5 primitive to key and hand-rolling HMAC-MD5 would be gratuitous.
- */
 export async function hmac(text: string, secret: string, algo: Algo): Promise<Uint8Array | null> {
   if (algo === "MD5") return null;
 
@@ -59,11 +47,6 @@ export function encode(bytes: Uint8Array, enc: Encoding): string {
   return enc === "hex-upper" ? hex.toUpperCase() : hex;
 }
 
-/**
- * Constant-time-ish comparison for the verify field. Timing does not actually
- * matter in a browser tool, but normalising case and whitespace does: a
- * checksum pasted from a release page arrives with all sorts of formatting.
- */
 export function digestsMatch(a: string, b: string): boolean {
   const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "").replace(/^sha\d*[:=-]/, "");
   const x = norm(a);
@@ -75,7 +58,6 @@ export function digestsMatch(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/** Guesses which algorithm a pasted digest came from, by length. */
 export function detectAlgo(digest: string): Algo | null {
   const hex = digest.trim().replace(/\s+/g, "");
   if (!/^[0-9a-fA-F]+$/.test(hex)) return null;
@@ -91,10 +73,6 @@ export const formatBytes = (n: number): string => {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 };
 
-// --- MD5 --------------------------------------------------------------------
-// RFC 1321. Included only so legacy checksums can be verified; never use it
-// for anything security-sensitive.
-
 const S = [
   7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
   5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
@@ -108,7 +86,6 @@ const K = Array.from({ length: 64 }, (_, i) => Math.floor(Math.abs(Math.sin(i + 
 function md5(input: Uint8Array): Uint8Array {
   const bitLen = input.length * 8;
 
-  // Pad to 64-byte blocks: 0x80, zeros, then the length as a 64-bit LE integer.
   const padded = new Uint8Array((((input.length + 8) >> 6) + 1) << 6);
   padded.set(input);
   padded[input.length] = 0x80;

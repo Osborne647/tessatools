@@ -1,8 +1,5 @@
 "use client";
 
-// The full timestamp converter: epoch → date, date → epoch, a live clock, and
-// real timezone handling. The page's only client component.
-
 import { useEffect, useMemo, useState } from "react";
 import {
   UNIT_LABELS,
@@ -57,15 +54,11 @@ export default function TimestampTool() {
   const [dateInput, setDateInput] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
-  // Default to the visitor's own zone once mounted. Doing this in an effect
-  // rather than at init keeps the server and client render identical, which
-  // would otherwise be a hydration mismatch.
   useEffect(() => {
     setTz(localZone());
     setEpochInput(String(Math.floor(Date.now() / 1000)));
   }, []);
 
-  // Live clock, ticking once a second.
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
@@ -89,8 +82,6 @@ export default function TimestampTool() {
 
   return (
     <div className="bg-facet-1 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)]">
-      {/* Live clock strip. The subject of this tool is time passing, so the
-          tool itself should be visibly alive. */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-navy-deep px-5 py-3 sm:px-7">
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">now</span>
@@ -109,7 +100,6 @@ export default function TimestampTool() {
         </button>
       </div>
 
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-7">
         <div className="flex items-center gap-1 bg-navy p-1">
           <button
@@ -255,7 +245,6 @@ export default function TimestampTool() {
           )}
         </div>
 
-        {/* Output: every format, each row copyable. */}
         <div className="bg-facet-3 px-5 py-5 sm:px-7">
           {rendered ? (
             <>

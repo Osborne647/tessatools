@@ -1,8 +1,5 @@
 "use client";
 
-// The full JWT decoder. Decoding is instant and local; HS* signature
-// verification is optional and also local, via the Web Crypto API.
-
 import { useEffect, useMemo, useState } from "react";
 import {
   type ClaimNote,
@@ -12,8 +9,6 @@ import {
   verifyHmac,
 } from "@/lib/jwt";
 
-// A self-contained sample token so the tool is never empty. Signed with the
-// secret below, so "verify" works out of the box.
 const SAMPLE_SECRET = "tessacode-demo-secret";
 const SAMPLE =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImtleS0xIn0" +
@@ -83,7 +78,6 @@ export default function JwtTool() {
   const decoded = "error" in result && result.error && !("header" in result) ? null : (result as DecodedJwt);
   const fatal = "error" in result && !("header" in result) ? (result.error as string) : null;
 
-  // Any edit invalidates a previous verdict.
   useEffect(() => {
     setVerdict(null);
   }, [token, secret]);
@@ -102,7 +96,6 @@ export default function JwtTool() {
   const warning = decoded ? algorithmWarning(decoded.algorithm) : null;
   const isHmac = decoded?.algorithm?.startsWith("HS") ?? false;
 
-  // The headline verdict: expiry is what people are actually checking.
   const status = !decoded
     ? { text: "not a token", tone: "text-coral" }
     : decoded.expired
@@ -115,8 +108,6 @@ export default function JwtTool() {
 
   return (
     <div className="bg-facet-1 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)]">
-      {/* Privacy banner. This is the objection every visitor has, so answer it
-          before they have to ask. */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-navy-deep px-5 py-3 sm:px-7">
         <p className="font-mono text-[11.5px] text-sub">
           decoded in this tab · your token is never sent anywhere
@@ -146,7 +137,6 @@ export default function JwtTool() {
       </div>
 
       <div className="grid lg:grid-cols-2">
-        {/* Input + verification */}
         <div className="bg-facet-2 px-5 py-5 sm:px-7">
           <label
             htmlFor="jwt-in"
@@ -163,8 +153,6 @@ export default function JwtTool() {
             className="mt-3 h-[184px] w-full resize-none bg-navy px-4 py-3 font-mono text-[13px] leading-[1.7] break-all text-white outline-none placeholder:text-sub/50 focus:ring-1 focus:ring-teal"
           />
 
-          {/* Colour-coded so the three segments are visually separable, the way
-              every developer already pictures a JWT. */}
           {decoded && (
             <p className="mt-3 font-mono text-[11px] text-sub">
               <span className="text-teal">header</span>
@@ -219,7 +207,6 @@ export default function JwtTool() {
           </div>
         </div>
 
-        {/* Decoded output */}
         <div className="bg-facet-3 px-5 py-5 sm:px-7">
           {fatal ? (
             <div className="flex h-full min-h-[300px] items-center">
@@ -254,8 +241,6 @@ export default function JwtTool() {
                 </p>
               )}
 
-              {/* Claims, interpreted. Raw JSON is below; this is the part that
-                  answers "is this token good right now". */}
               {decoded.claims.length > 0 && (
                 <div className="mt-5">
                   {decoded.claims.map((c) => (

@@ -1,8 +1,6 @@
 import Breadcrumb from "./Breadcrumb";
 import TriangleField from "./TriangleField";
 
-// Shared hero for the static pages, so about/privacy/contact all sit in the
-// same rhythm as the tool pages without duplicating the markup three times.
 export default function PageHeader({
   crumb,
   title,

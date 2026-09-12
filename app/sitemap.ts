@@ -1,8 +1,6 @@
 import type { MetadataRoute } from "next";
 import { site, tools } from "@/lib/site-config";
 
-// Generates /sitemap.xml at build time. Submit it once in Search Console and
-// every new tool you add to site-config.ts shows up automatically.
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -1,14 +1,3 @@
-// YAML ↔ JSON, hand-written and dependency-free.
-//
-// The full YAML spec is enormous and most of it never appears in a config file.
-// This covers the subset that does: block mappings and sequences, flow
-// collections, all five scalar styles, block scalars with chomping, anchors,
-// aliases, merge keys, comments, and multi-document streams.
-//
-// Scalar resolution follows YAML 1.2 (the JSON-compatible core schema), so
-// `no` is the string "no" rather than boolean false. That is the modern,
-// correct behaviour and the opposite of YAML 1.1 — see the Norway problem.
-
 export type YamlValue =
   | null
   | boolean
@@ -34,11 +23,8 @@ export function parseYaml(src: string): ParseResult {
 }
 
 export type EmitOptions = {
-  /** Spaces per indent level. */
   indent: number;
-  /** Emit multi-line strings as literal block scalars instead of quoting. */
   blockStrings: boolean;
-  /** Quote every string, even when it needs no quoting. */
   quoteAll: boolean;
 };
 
@@ -76,8 +62,6 @@ export function stats(src: string, value: YamlValue, documents: number): Stats {
   };
 }
 
-// --- parsing ----------------------------------------------------------------
-
 class YamlSyntaxError extends Error {
   constructor(public detail: YamlError) {
     super(detail.message);
@@ -85,9 +69,7 @@ class YamlSyntaxError extends Error {
 }
 
 type Line = {
-  /** Comment-stripped content, used for structure. */
   text: string;
-  /** Untouched source, used for block scalar bodies where # is literal. */
   raw: string;
   indent: number;
   n: number;
@@ -104,7 +86,6 @@ class YamlParser {
   }
 
   parseStream(): YamlValue[] {
-    // Split on document markers first, so anchors reset per document.
     const groups: string[][] = [[]];
     for (const line of this.raw) {
       if (/^---\s*(#.*)?$/.test(line)) {
@@ -133,14 +114,8 @@ class YamlParser {
     return docs.length ? docs : [null];
   }
 
-  /**
-   * Records indentation, line numbers, and both the raw and comment-stripped
-   * form of every line. Blank lines are kept rather than dropped: a literal
-   * block scalar preserves them, so they cannot be thrown away this early.
-   */
   prepare(body: string[], offset: number): Line[] {
     return body.map((raw, idx) => {
-      // Tabs are illegal as YAML indentation and a very common paste error.
       if (/^ *\t/.test(raw)) {
         this.fail("YAML forbids tabs for indentation — use spaces", offset + idx, raw);
       }
@@ -156,7 +131,6 @@ class YamlParser {
     });
   }
 
-  /** Parses one block-level node starting at line index `i`. */
   parseBlock(i: number, indent: number): [YamlValue, number] {
     let j = i;
     while (j < this.lines.length && (this.lines[j].blank || !this.lines[j].text.trim())) j += 1;
@@ -165,20 +139,13 @@ class YamlParser {
     i = j;
 
     if (line.indent < indent) return [null, i];
-
-    // sequence
     if (/^-(\s|$)/.test(line.text.trim())) return this.parseSequence(i, line.indent);
-
-    // A document may be a single bare scalar, e.g. `just a string`. Only treat
-    // it that way when there is exactly one content line, so genuinely broken
-    // multi-line input still gets the "key: value" error it deserves.
     if (!splitKey(line.text.trim()) && this.nextContent(i + 1) === -1) {
       const block = this.tryBlockScalar(line.text.trim(), i + 1, line.indent - 1);
       if (block) return block;
       return [this.resolveScalar(line.text.trim(), line), i + 1];
     }
 
-    // mapping
     return this.parseMapping(i, line.indent);
   }
 
@@ -204,7 +171,6 @@ class YamlParser {
       i += 1;
 
       if (!rest) {
-        // Value lives on the following, more-indented lines.
         const k = this.nextContent(i);
         if (k !== -1 && this.lines[k].indent > indent) {
           const [v, next] = this.parseBlock(k, this.lines[k].indent);
@@ -216,8 +182,6 @@ class YamlParser {
         continue;
       }
 
-      // "- key: value" or "- - x": a nested node begins on the dash line
-      // itself, so re-parse it as a virtual line two columns further in.
       if (splitKey(rest) || /^-(\s|$)/.test(rest)) {
         const [value, next] = this.parseInlineNode(rest, indent + 2, i, line);
         items.push(value);
@@ -243,11 +207,6 @@ class YamlParser {
     return [items, i];
   }
 
-  /**
-   * Handles a node that starts on the same line as its parent dash, such as
-   * `- key: value` or `- - nested`. The dash line is replayed as a virtual
-   * line at the deeper indent, together with every line that belongs to it.
-   */
   parseInlineNode(
     rest: string,
     indent: number,
@@ -311,7 +270,6 @@ class YamlParser {
       const key = unquoteKey(rawKey);
       i += 1;
 
-      // merge key: <<: *base splices an aliased mapping into this one
       if (key === "<<") {
         const merged = this.resolveScalar(rawValue, line);
         for (const m of Array.isArray(merged) ? merged : [merged]) {
@@ -323,7 +281,6 @@ class YamlParser {
       const [anchor, body] = takeAnchor(rawValue);
 
       if (!body) {
-        // Value is a nested block, or empty.
         const k = this.nextContent(i);
         if (k !== -1 && this.lines[k].indent > indent) {
           const [v, next] = this.parseBlock(k, this.lines[k].indent);
@@ -354,13 +311,6 @@ class YamlParser {
     return [map, i];
   }
 
-  /**
-   * `|` and `>` block scalars, with `-`/`+` chomping indicators.
-   *
-   * Reads from `raw` rather than the comment-stripped text, because inside a
-   * block scalar a `#` is literal content. Blank lines are preserved, which is
-   * what makes folded scalars fold into paragraphs correctly.
-   */
   tryBlockScalar(body: string, i: number, indent: number): [string, number] | null {
     const m = /^([|>])([-+]?)(\d*)\s*$/.exec(body.trim());
     if (!m) return null;
@@ -375,7 +325,6 @@ class YamlParser {
       const line = this.lines[j];
 
       if (line.blank) {
-        // A blank line belongs to the block only if content follows it inside.
         const k = this.nextContent(j);
         if (k === -1 || this.lines[k].indent <= indent) break;
         collected.push("");
@@ -398,7 +347,6 @@ class YamlParser {
     return [text, j];
   }
 
-  /** Index of the next line with real content, or -1. */
   nextContent(from: number): number {
     for (let k = from; k < this.lines.length; k += 1) {
       if (!this.lines[k].blank && this.lines[k].text.trim()) return k;
@@ -406,7 +354,6 @@ class YamlParser {
     return -1;
   }
 
-  /** A single scalar, flow collection, or alias. */
   resolveScalar(raw: string, line: Line): YamlValue {
     const s = raw.trim();
     if (!s) return null;
@@ -449,7 +396,6 @@ function hintFor(message: string): string | null {
   return null;
 }
 
-/** Splits "key: value", ignoring colons inside quotes, URLs, and flow braces. */
 function splitKey(line: string): [string, string] | null {
   let quote: string | null = null;
   let depth = 0;
@@ -468,8 +414,6 @@ function splitKey(line: string): [string, string] | null {
     }
     if (c === "[" || c === "{") depth += 1;
     if (c === "]" || c === "}") depth -= 1;
-
-    // A key ends at the first colon followed by a space or end of line.
     if (c === ":" && depth === 0 && (i + 1 === line.length || /\s/.test(line[i + 1]))) {
       return [line.slice(0, i).trim(), line.slice(i + 1).trim()];
     }
@@ -491,7 +435,6 @@ function unquoteKey(key: string): string {
   return s;
 }
 
-/** Removes a trailing comment, but not a # inside a quoted string. */
 function stripComment(line: string): string {
   let quote: string | null = null;
 
@@ -506,14 +449,12 @@ function stripComment(line: string): string {
       quote = c;
       continue;
     }
-    // A comment must be preceded by whitespace, so a#b stays intact.
     if (c === "#" && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i);
   }
 
   return line;
 }
 
-/** YAML 1.2 core schema scalar resolution. */
 function resolveScalarText(s: string): YamlValue {
   if (s.startsWith('"') || s.startsWith("'")) return unquote(s);
 
@@ -534,7 +475,6 @@ function resolveScalarText(s: string): YamlValue {
 
 function unquote(s: string): string {
   if (s.startsWith("'") && s.endsWith("'") && s.length >= 2) {
-    // Single quotes: the only escape is '' for a literal quote.
     return s.slice(1, -1).replace(/''/g, "'");
   }
   if (s.startsWith('"') && s.endsWith('"') && s.length >= 2) {
@@ -552,10 +492,6 @@ function unquote(s: string): string {
   return s;
 }
 
-/**
- * Folded block scalars: consecutive plain lines join with a space, a blank line
- * becomes a real paragraph break, and a more-indented line keeps its own break.
- */
 function foldLines(lines: string[]): string {
   const chunks: string[] = [];
   let buffer = "";
@@ -580,8 +516,6 @@ function foldLines(lines: string[]): string {
   }
   flush();
 
-  // A single blank line separates paragraphs with one newline, so collapse the
-  // empty marker into the join rather than emitting two breaks.
   const out: string[] = [];
   for (let i = 0; i < chunks.length; i += 1) {
     if (chunks[i] === "" && i > 0 && i < chunks.length - 1) continue;
@@ -591,7 +525,6 @@ function foldLines(lines: string[]): string {
   return `${out.join("\n")}\n`;
 }
 
-/** Flow collections: [a, b] and {k: v}. Recursive descent over one line. */
 function parseFlow(src: string): YamlValue {
   let i = 0;
 
@@ -617,7 +550,6 @@ function parseFlow(src: string): YamlValue {
         if (src[i] === ",") {
           i += 1;
           ws();
-          // tolerate a trailing comma
           if (src[i] === "]") {
             i += 1;
             return arr;
@@ -701,8 +633,6 @@ function parseFlow(src: string): YamlValue {
   return result;
 }
 
-// --- emitting ---------------------------------------------------------------
-
 function emit(value: YamlValue, depth: number, opts: EmitOptions): string[] {
   const pad = " ".repeat(depth * opts.indent);
 
@@ -713,7 +643,6 @@ function emit(value: YamlValue, depth: number, opts: EmitOptions): string[] {
     for (const item of value) {
       if (isContainer(item) && hasContent(item)) {
         const nested = emit(item, depth + 1, opts);
-        // Hoist the first child onto the dash line: "- key: value".
         out.push(`${pad}-${nested[0].slice(pad.length + opts.indent - 1)}`);
         out.push(...nested.slice(1));
       } else {
@@ -756,7 +685,6 @@ function scalarText(v: YamlValue, opts: EmitOptions, depth: number): string {
   if (Array.isArray(v)) return "[]";
   if (typeof v === "object") return "{}";
 
-  // Multi-line strings read far better as literal block scalars.
   if (opts.blockStrings && v.includes("\n")) {
     const pad = " ".repeat(depth * opts.indent);
     const body = v
@@ -770,31 +698,19 @@ function scalarText(v: YamlValue, opts: EmitOptions, depth: number): string {
   return opts.quoteAll || needsQuote(v) ? JSON.stringify(v) : v;
 }
 
-/**
- * Decides whether a plain string must be quoted. Getting this wrong is how
- * YAML output silently changes meaning: an unquoted `yes`, `3.14`, or `null`
- * stops being a string the moment it is read back.
- */
 function needsQuote(s: string): boolean {
   if (s === "") return true;
   if (s !== s.trim()) return true;
-  // A raw newline cannot appear in a plain scalar at all.
   if (/[\n\r\t]/.test(s)) return true;
-
-  // Anything that would resolve to a non-string under any common schema.
   if (/^(null|Null|NULL|~|true|True|TRUE|false|False|FALSE|yes|Yes|YES|no|No|NO|on|On|ON|off|Off|OFF|y|Y|n|N)$/.test(s)) {
     return true;
   }
   if (/^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(s)) return true;
   if (/^0[xo]/.test(s)) return true;
   if (/^\.(inf|Inf|INF|nan|NaN|NAN)$/.test(s)) return true;
-
-  // Leading indicator characters change the node type.
   if (/^[-?:,[\]{}#&*!|>'"%@`]/.test(s)) return true;
-  // Sequences that would be read as structure.
   if (/:\s/.test(s) || /\s#/.test(s)) return true;
   if (s.endsWith(":")) return true;
-  // Sexagesimal-looking values, e.g. 1:30, are numbers in YAML 1.1.
   if (/^\d+(:\d+)+$/.test(s)) return true;
 
   return false;
@@ -802,10 +718,7 @@ function needsQuote(s: string): boolean {
 
 function needsKeyQuote(k: string): boolean {
   if (k === "" || needsQuote(k)) return true;
-  // Leading indicator characters change the node type.
   if (/[:{}[\],&*#?|\-<>=!%@`'"]/.test(k[0])) return true;
-  // A colon or hash anywhere makes the key ambiguous across parsers, even
-  // where this one would read it correctly.
   return /[:#]/.test(k);
 }
 

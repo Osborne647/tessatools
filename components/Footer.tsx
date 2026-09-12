@@ -16,7 +16,6 @@ export default function Footer() {
 
         <nav className="flex flex-wrap gap-6 font-mono text-[16px] text-muted">
           <Link href="/about" className="transition-colors hover:text-white">About</Link>
-          {/* AdSense requires a real privacy policy. Write it before you apply. */}
           <Link href="/privacy" className="transition-colors hover:text-white">Privacy</Link>
           <Link href="/contact" className="transition-colors hover:text-white">Contact</Link>
           <span className="text-sub">© 2026</span>

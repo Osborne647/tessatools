@@ -1,20 +1,7 @@
-// CSS minifier, hand-written and dependency-free.
-//
-// Minifying CSS looks like a regex job and is not. Every naive implementation
-// breaks on the same handful of cases: a semicolon inside a data: URI, a brace
-// inside a quoted content string, the mandatory spaces around operators in
-// calc(), and the `>` in a child selector versus the `>` inside an attribute
-// value. So this walks the stylesheet character by character, tracking whether
-// it is inside a string, a comment, a url(), or a block.
-
 export type Options = {
-  /** Collapse #aabbcc to #abc and long rgb() to hex where exact. */
   shortenColors: boolean;
-  /** Drop the unit from zero values, so 0px becomes 0. */
   stripZeroUnits: boolean;
-  /** Keep comments that start with /*! — the license-header convention. */
   keepBangComments: boolean;
-  /** Emit one rule per line instead of a single long line. */
   newlinePerRule: boolean;
 };
 
@@ -34,7 +21,6 @@ export type Result = {
   rules: number;
   declarations: number;
   comments: number;
-  /** Non-fatal things worth telling the user about. */
   notes: string[];
 };
 
@@ -72,7 +58,6 @@ export function minify(src: string, opts: Options = DEFAULTS): Result {
   };
 }
 
-/** Pretty-prints minified (or messy) CSS, for the reverse direction. */
 export function beautify(src: string, indent = 2): string {
   const clean = collapseWhitespace(stripComments(src, true, { comments: 0 }));
   const pad = " ".repeat(indent);
@@ -112,7 +97,6 @@ export function beautify(src: string, indent = 2): string {
     }
 
     if (c === ",") {
-      // A comma between selectors gets its own line; inside a value it does not.
       out += depth === 0 ? ",\n" : ", ";
       i += 1;
       continue;
@@ -138,9 +122,6 @@ export function beautify(src: string, indent = 2): string {
 
 export const byteLength = (s: string) => new TextEncoder().encode(s).length;
 
-// ---------------------------------------------------------------------------
-
-/** Reads a quoted string whole, so its contents are never rewritten. */
 function readString(src: string, start: number): [string, number] {
   const quote = src[start];
   let out = quote;
@@ -163,11 +144,6 @@ function readString(src: string, start: number): [string, number] {
   return [out, i];
 }
 
-/**
- * Reads a url(...) token whole. Unquoted URLs may contain semicolons, commas,
- * and braces — a base64 data: URI routinely contains all three — so none of
- * the later passes may touch the inside of one.
- */
 function readUrl(src: string, start: number): [string, number] | null {
   if (!/^url\(/i.test(src.slice(start, start + 4))) return null;
 
@@ -223,7 +199,6 @@ function stripComments(src: string, keepBang: boolean, counts: { comments: numbe
       const stop = end === -1 ? src.length : end + 2;
       counts.comments += 1;
 
-      // /*! ... */ is the de facto marker for a license header that must survive.
       if (keepBang && src[i + 2] === "!") out += src.slice(i, stop);
       else out += " ";
 
@@ -254,8 +229,6 @@ function collapseWhitespace(src: string): string {
 
     const url = readUrl(src, i);
     if (url) {
-      // Only an UNQUOTED url() may have its whitespace removed. Inside quotes
-      // a space is part of the filename: url("my image.png") must survive.
       const quoted = /^url\(\s*["']/i.test(url[0]);
       out += quoted ? url[0] : url[0].replace(/\s+/g, "");
       i = url[1];
@@ -277,14 +250,9 @@ function collapseWhitespace(src: string): string {
   return out.trim();
 }
 
-/**
- * Removes whitespace around punctuation, but not inside calc() and friends,
- * where the spaces around + and - are required by the grammar.
- */
 function tidyPunctuation(src: string): string {
   let out = "";
   let i = 0;
-  // Depth of nested math functions, where spacing must be preserved.
   let mathDepth = 0;
   const parenStack: boolean[] = [];
 
@@ -310,12 +278,10 @@ function tidyPunctuation(src: string): string {
       const stop = end === -1 ? src.length : end + 2;
       out += src.slice(i, stop);
       i = stop;
-      // A kept header needs no space before the first rule.
       while (i < src.length && src[i] === " ") i += 1;
       continue;
     }
 
-    // Entering a function: remember whether it is a math one.
     if (c === "(") {
       const isMath = /(calc|clamp|min|max)\s*$/i.test(out);
       parenStack.push(isMath);
@@ -335,14 +301,12 @@ function tidyPunctuation(src: string): string {
     }
 
     if (c === " " && mathDepth > 0) {
-      // Keep exactly one space; the grammar needs it around + and -.
       out += " ";
       i += 1;
       continue;
     }
 
     if (c === " ") {
-      // Drop the space if either neighbour makes it redundant.
       const prev = out[out.length - 1];
       const next = src[i + 1];
       if (prev === undefined || ":;,{}>~+(".includes(prev) || ";,{}>~+)".includes(next ?? "")) {
@@ -358,7 +322,6 @@ function tidyPunctuation(src: string): string {
       out = out.replace(/ $/, "");
       out += c;
       i += 1;
-      // Skip any whitespace that follows.
       while (i < src.length && src[i] === " ") i += 1;
       continue;
     }
@@ -367,22 +330,18 @@ function tidyPunctuation(src: string): string {
     i += 1;
   }
 
-  // A semicolon immediately before a closing brace is redundant.
   return out.replace(/;\}/g, "}").replace(/\}\s*$/, "}").trim();
 }
 
 function stripZeros(src: string): string {
   return mapOutsideStrings(src, (chunk) =>
     chunk
-      // 0px → 0, but never touch 0s / 0ms in transitions, where some engines
-      // and all of Safari require the unit.
       .replace(/(^|[\s:,(])(-?)0(?:px|em|rem|ex|ch|vw|vh|vmin|vmax|cm|mm|in|pt|pc|q)\b/gi, "$10")
       // 0.5 → .5
       .replace(/(^|[\s:,(])(-?)0\.(\d)/g, "$1$2.$3")
       // 1.0px → 1px
       .replace(/(\d)\.0+(?=[a-z%\s;,)}]|$)/gi, "$1")
-      // 1.50px → 1.5px. A \b here would fail, because there is no word
-      // boundary between the final 0 and the unit's first letter.
+      // 1.50px → 1.5px
       .replace(/(\.\d*[1-9])0+(?=[a-z%\s;,)}]|$)/gi, "$1"),
   );
 }
@@ -400,20 +359,13 @@ function shortenColors(src: string): string {
         const short = /^(.)\1(.)\2(.)\3$/.test(hex) ? `#${hex[0]}${hex[2]}${hex[4]}` : `#${hex}`;
         return short;
       })
-      // Long names that are longer than their hex equivalent.
       .replace(/(^|[\s:,(])white\b/gi, "$1#fff")
       .replace(/(^|[\s:,(])black\b/gi, "$1#000")
       .toLowerCase()
-      // Undo the lowercasing of anything that is case-sensitive.
       .replace(/#([0-9a-f]{3,8})\b/gi, (m) => m.toLowerCase()),
   );
 }
 
-/**
- * Applies a transform to every part of the stylesheet that is NOT inside a
- * string, a url(), or a comment — so quoted content, data URIs, and a kept
- * /*! license header *\/ all pass through byte for byte.
- */
 function mapOutsideStrings(src: string, fn: (chunk: string) => string): string {
   let out = "";
   let buffer = "";
@@ -443,7 +395,6 @@ function mapOutsideStrings(src: string, fn: (chunk: string) => string): string {
       continue;
     }
 
-    // A surviving comment is content, not code.
     if (c === "/" && src[i + 1] === "*") {
       flush();
       const end = src.indexOf("*/", i + 2);

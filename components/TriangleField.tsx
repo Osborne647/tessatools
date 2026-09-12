@@ -1,5 +1,3 @@
-// Ambient background: an SVG triangle tessellation that drifts by exactly one
-// pattern tile, so the loop is invisible. Pure CSS animation, zero JS.
 export default function TriangleField() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -12,7 +10,6 @@ export default function TriangleField() {
         </defs>
         <rect width="100%" height="100%" fill="url(#tess)" opacity="0.085" />
       </svg>
-      {/* Fades the pattern into the page instead of letting it hit a hard edge. */}
       <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,transparent_20%,var(--color-navy)_78%)]" />
     </div>
   );

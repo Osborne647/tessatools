@@ -1,8 +1,5 @@
 "use client";
 
-// The full cron parser: plain-English description, the next five run times in
-// any timezone, and a field-by-field breakdown. The page's only client bundle.
-
 import { useEffect, useMemo, useState } from "react";
 import {
   type FieldName,
@@ -32,7 +29,6 @@ const FIELD_LABELS: { name: FieldName; title: string; range: string }[] = [
   { name: "dow", title: "day of week", range: "0-6" },
 ];
 
-/** Collapses a long value list into ranges: 1,2,3,5 → "1-3, 5". */
 function summarize(values: number[]): string {
   if (!values.length) return "—";
   const runs: string[] = [];
@@ -58,8 +54,6 @@ export default function CronTool() {
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  // Match the visitor's own zone after mount, so server and client render the
-  // same markup and hydration stays clean.
   useEffect(() => {
     setTz(localZone());
   }, []);
@@ -88,8 +82,6 @@ export default function CronTool() {
 
   return (
     <div className="bg-facet-1 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)]">
-      {/* Expression input. The field legend sits directly under it so the five
-          positions are readable while you type. */}
       <div className="bg-facet-2 px-5 py-5 sm:px-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label
@@ -164,7 +156,6 @@ export default function CronTool() {
       </div>
 
       <div className="grid md:grid-cols-2">
-        {/* Description + field breakdown */}
         <div className="bg-facet-3 px-5 py-5 sm:px-7">
           {error ? (
             <div>

@@ -1,8 +1,5 @@
 "use client";
 
-// The full CSS minifier, with a beautify direction for the reverse trip.
-// The page's only client component.
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULTS, type Options, beautify, byteLength, minify } from "@/lib/css";
 
@@ -41,7 +38,6 @@ const TOGGLES: { key: keyof Options; label: string; hint: string }[] = [
   { key: "newlinePerRule", label: "one rule per line", hint: "easier to diff" },
 ];
 
-/** A byte-savings bar. The number is the point of this tool, so show it big. */
 function Savings({ percent, saved }: { percent: number; saved: number }) {
   const width = Math.max(0, Math.min(100, percent));
 
@@ -171,7 +167,6 @@ export default function CssTool() {
         </div>
       </div>
 
-      {/* Options, only relevant when minifying */}
       {mode === "minify" && (
         <div className="flex flex-wrap gap-x-6 gap-y-3 bg-navy-deep px-5 py-3 sm:px-7">
           {TOGGLES.map((t) => (
@@ -193,7 +188,6 @@ export default function CssTool() {
       )}
 
       <div className="grid md:grid-cols-2">
-        {/* Source */}
         <div className="bg-facet-2">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">
@@ -217,7 +211,6 @@ export default function CssTool() {
           />
         </div>
 
-        {/* Output */}
         <div className="bg-facet-3">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">
@@ -261,7 +254,6 @@ export default function CssTool() {
         </div>
       </div>
 
-      {/* Savings + stats */}
       {mode === "minify" && src.trim() && (
         <div className="grid gap-6 bg-navy-deep px-5 py-5 sm:grid-cols-2 sm:px-7">
           <Savings percent={result.savedPercent} saved={result.saved} />

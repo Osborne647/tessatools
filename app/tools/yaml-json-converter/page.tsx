@@ -6,8 +6,6 @@ import RelatedTools from "@/components/RelatedTools";
 import TriangleField from "@/components/TriangleField";
 import { faqJsonLd, getTool, site, toolJsonLd } from "@/lib/site-config";
 
-// Server component. It owns metadata and structured data; the interactive part
-// is isolated in <YamlTool />, the page's only client bundle.
 const tool = getTool("yaml-json-converter")!;
 
 export const metadata: Metadata = {
@@ -47,8 +45,6 @@ const breadcrumbJsonLd = {
 export default function YamlPage() {
   return (
     <main>
-      {/* Three schemas: what the app is, the FAQ (feeds AI Overviews), and
-          where the page sits in the site. */}
       {[toolJsonLd(tool), faqJsonLd(tool.faqs), breadcrumbJsonLd].map((schema, i) => (
         <script
           key={i}
@@ -61,8 +57,6 @@ export default function YamlPage() {
         <TriangleField />
         <div className="relative mx-auto max-w-6xl px-6 pb-14 pt-8 sm:px-10 sm:pb-16 sm:pt-12">
           <Breadcrumb crumb={tool.crumb} />
-
-          {/* One H1, leading with the target keyword. */}
           <h1 className="mt-6 max-w-[19ch] font-display text-[44px] font-bold leading-[0.96] tracking-[-0.04em] text-white sm:text-[68px]">
             Free YAML to JSON Converter
           </h1>
@@ -78,9 +72,6 @@ export default function YamlPage() {
           </div>
         </div>
       </section>
-
-      {/* Supporting content: ~560 words of genuinely useful copy. This is what
-          separates a page that ranks from a thin tool page that gets filtered. */}
       <article className="mx-auto max-w-6xl px-6 pb-16 sm:px-10">
         <div className="max-w-[72ch] border-t border-line pt-14">
           <h2 className="font-display text-[30px] font-bold tracking-[-0.035em] text-white sm:text-[38px]">

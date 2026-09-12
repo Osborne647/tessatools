@@ -40,8 +40,6 @@ export default function HeroTool() {
     return decoded === null ? { text: "", error: true } : { text: decoded, error: false };
   }, [input, mode]);
 
-  // Swapping feeds the output back in as the new input, so encode → decode
-  // round-trips in one click instead of forcing a copy-paste.
   function flip() {
     if (output.text && !output.error) setInput(output.text);
     setMode((m) => (m === "encode" ? "decode" : "encode"));
@@ -76,7 +74,6 @@ export default function HeroTool() {
       </div>
 
       <div className="grid md:grid-cols-[1fr_auto_1fr]">
-        {/* Input */}
         <div className="bg-facet-2">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">
@@ -94,7 +91,6 @@ export default function HeroTool() {
           />
         </div>
 
-        {/* Swap */}
         <div className="flex items-center justify-center bg-facet-2 py-2 md:py-0">
           <button
             type="button"
@@ -119,7 +115,6 @@ export default function HeroTool() {
           </button>
         </div>
 
-        {/* Output */}
         <div className="bg-facet-3">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">

@@ -1,7 +1,3 @@
-// UUID generation, framework-free so the tool component and any test file can
-// share it. Everything uses crypto.getRandomValues — never Math.random, which
-// is not cryptographically random and will eventually collide.
-
 export type Version = "v4" | "v7";
 
 export type Shape = "plain" | "upper" | "braced" | "no-dashes" | "quoted" | "json" | "sql";
@@ -13,7 +9,6 @@ const HEX: string[] = Array.from({ length: 256 }, (_, i) =>
 const NIL = "00000000-0000-0000-0000-000000000000";
 const MAX = "ffffffff-ffff-ffff-ffff-ffffffffffff";
 
-/** Random UUID. Uses the native implementation where available. */
 export function uuidV4(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
 
@@ -23,25 +18,15 @@ export function uuidV4(): string {
   return format(b);
 }
 
-// Monotonic state. Generating a batch takes well under a millisecond, so
-// without this every UUID in that batch would share a timestamp and sort in
-// random order — defeating the only reason to pick v7.
 let lastMs = -1;
 let seq = 0;
 
-/**
- * Time-ordered UUID (RFC 9562). The first 48 bits are a Unix millisecond
- * timestamp and the next 12 bits are a counter, so v7 values sort
- * chronologically as plain strings. That makes them far better database
- * primary keys than v4, which scatters inserts across the B-tree.
- */
 export function uuidV7(): string {
   const b = crypto.getRandomValues(new Uint8Array(16));
   let ms = Date.now();
 
   if (ms === lastMs) {
     seq += 1;
-    // 12 bits of counter exhausted in one millisecond: borrow from the next.
     if (seq > 0xfff) {
       seq = 0;
       ms = lastMs + 1;
@@ -70,7 +55,6 @@ export function generate(version: Version, count: number): string[] {
   return Array.from({ length: count }, make);
 }
 
-/** Structural validation: correct shape, known version, RFC 4122 variant. */
 export function inspect(value: string): {
   valid: boolean;
   version: number | null;
@@ -79,7 +63,6 @@ export function inspect(value: string): {
 } {
   const v = value.trim().toLowerCase().replace(/^urn:uuid:/, "").replace(/[{}]/g, "");
 
-  // The nil and max UUIDs are valid per RFC 9562 but carry no version bits.
   if (v === NIL) return { valid: true, version: null, label: "nil UUID", timestamp: null };
   if (v === MAX) return { valid: true, version: null, label: "max UUID", timestamp: null };
 
@@ -87,14 +70,12 @@ export function inspect(value: string): {
   if (!m) return { valid: false, version: null, label: null, timestamp: null };
 
   const version = parseInt(m[1], 16);
-  // v7 carries its creation time in the first 48 bits — pull it back out.
   const timestamp =
     version === 7 ? new Date(parseInt(v.slice(0, 8) + v.slice(9, 13), 16)) : null;
 
   return { valid: true, version, label: `version ${version}, RFC 4122 variant`, timestamp };
 }
 
-/** Output shapes people actually paste into code. */
 export function formatAs(ids: string[], shape: Shape): string {
   switch (shape) {
     case "upper":

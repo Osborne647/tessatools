@@ -112,8 +112,6 @@ export default function HashTool() {
     [source],
   );
 
-  // Recompute whenever the input, encoding, or HMAC settings change. Async
-  // because crypto.subtle is promise-based.
   useEffect(() => {
     let cancelled = false;
 
@@ -150,8 +148,6 @@ export default function HashTool() {
     setSource({ kind: "file", name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) });
   }, []);
 
-  // Which algorithm the pasted checksum came from, so the matching row can be
-  // highlighted without the visitor having to tell us.
   const expectedAlgo = useMemo(() => detectAlgo(expected), [expected]);
   const matchedAlgo = useMemo(() => {
     if (!expected.trim()) return null;
@@ -178,7 +174,7 @@ export default function HashTool() {
         dragging ? "ring-2 ring-teal" : ""
       }`}
     >
-      {/* Toolbar */}
+
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-7">
         <div className="flex items-center gap-1 bg-navy p-1">
           {ENCODINGS.map((o) => (
@@ -285,7 +281,6 @@ export default function HashTool() {
             </div>
           )}
 
-          {/* HMAC secret */}
           {useHmac && (
             <div className="mt-5 border-t border-line pt-5">
               <label
@@ -308,7 +303,6 @@ export default function HashTool() {
             </div>
           )}
 
-          {/* Verify */}
           <div className="mt-5 border-t border-line pt-5">
             <label
               htmlFor="hash-expected"
@@ -340,7 +334,6 @@ export default function HashTool() {
           </div>
         </div>
 
-        {/* Digests */}
         <div className="bg-facet-3 px-5 py-5 sm:px-7">
           <div className="flex items-baseline justify-between gap-3">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">

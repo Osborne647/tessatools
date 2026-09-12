@@ -1,7 +1,5 @@
 import type { Faq as FaqItem } from "@/lib/site-config";
 
-// Native <details> means the accordion works with zero JavaScript and stays
-// crawlable: Google reads the answers whether or not they are expanded.
 export default function Faq({ items }: { items: FaqItem[] }) {
   return (
     <div>

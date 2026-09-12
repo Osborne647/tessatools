@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* Brand tokens. Declaring them in @theme is what turns them into real Tailwind
-   utilities: bg-navy, text-teal, font-display, and so on. Change a hex here and
-   it changes everywhere, no find-and-replace. */
 @theme {
   --color-navy: #0d1b2a;
   --color-navy-deep: #0a1522;
@@ -30,9 +27,6 @@ html {
   background: var(--color-teal);
   color: var(--color-navy);
 }
-
-/* Ambient tessellation drift. One pattern tile is 120x104, so translating by
-   exactly that distance makes the loop seamless. */
 @keyframes tess-drift {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(-120px, -104px, 0); }

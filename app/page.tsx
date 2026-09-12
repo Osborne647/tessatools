@@ -31,7 +31,6 @@ const claims = [
 export default function HomePage() {
   return (
     <main>
-      {/* Tells Google the site has a search-worthy identity, not just a page. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

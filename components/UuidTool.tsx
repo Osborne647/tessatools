@@ -1,8 +1,5 @@
 "use client";
 
-// The full UUID tool: batch generation, output shapes, and a validator.
-// Isolated as the page's only client component.
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   SHAPES,
@@ -25,8 +22,6 @@ export default function UuidTool() {
 
   const roll = useCallback(() => setIds(generate(version, count)), [version, count]);
 
-  // Generate on mount and whenever the version or count changes, so the tool
-  // is never sitting empty waiting for a click.
   useEffect(() => {
     setIds(generate(version, count));
   }, [version, count]);
@@ -52,7 +47,6 @@ export default function UuidTool() {
 
   return (
     <div className="bg-facet-1 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)]">
-      {/* Version + count */}
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-7">
         <div className="flex items-center gap-1 bg-navy p-1">
           {(["v4", "v7"] as const).map((v) => (
@@ -93,7 +87,6 @@ export default function UuidTool() {
         </div>
       </div>
 
-      {/* Output */}
       <div className="bg-facet-3">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4 sm:px-7">
           <div className="flex flex-wrap items-center gap-1">
@@ -155,7 +148,6 @@ export default function UuidTool() {
         </div>
       </div>
 
-      {/* Validator */}
       <div className="bg-facet-2 px-5 py-5 sm:px-7">
         <label
           htmlFor="uuid-check"

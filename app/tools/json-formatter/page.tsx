@@ -6,8 +6,6 @@ import RelatedTools from "@/components/RelatedTools";
 import TriangleField from "@/components/TriangleField";
 import { faqJsonLd, getTool, site, toolJsonLd } from "@/lib/site-config";
 
-// Server component. It owns metadata and structured data; the interactive part
-// is isolated in <JsonTool />, the page's only client bundle.
 const tool = getTool("json-formatter")!;
 
 export const metadata: Metadata = {
@@ -41,8 +39,6 @@ const breadcrumbJsonLd = {
 export default function JsonPage() {
   return (
     <main>
-      {/* Three schemas: what the app is, the FAQ (feeds AI Overviews), and
-          where the page sits in the site. */}
       {[toolJsonLd(tool), faqJsonLd(tool.faqs), breadcrumbJsonLd].map((schema, i) => (
         <script
           key={i}
@@ -73,8 +69,6 @@ export default function JsonPage() {
         </div>
       </section>
 
-      {/* Supporting content: ~530 words of genuinely useful copy. This is what
-          separates a page that ranks from a thin tool page that gets filtered. */}
       <article className="mx-auto max-w-6xl px-6 pb-16 sm:px-10">
         <div className="max-w-[72ch] border-t border-line pt-14">
           <h2 className="font-display text-[30px] font-bold tracking-[-0.035em] text-white sm:text-[38px]">

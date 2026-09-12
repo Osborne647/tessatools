@@ -6,8 +6,6 @@ import RelatedTools from "@/components/RelatedTools";
 import TriangleField from "@/components/TriangleField";
 import { faqJsonLd, getTool, site, toolJsonLd } from "@/lib/site-config";
 
-// Server component. It owns metadata and structured data; the interactive part
-// is isolated in <CronTool />, the page's only client bundle.
 const tool = getTool("cron-parser")!;
 
 export const metadata: Metadata = {
@@ -47,8 +45,6 @@ const breadcrumbJsonLd = {
 export default function CronPage() {
   return (
     <main>
-      {/* Three schemas: what the app is, the FAQ (feeds AI Overviews), and
-          where the page sits in the site. */}
       {[toolJsonLd(tool), faqJsonLd(tool.faqs), breadcrumbJsonLd].map((schema, i) => (
         <script
           key={i}
@@ -61,8 +57,6 @@ export default function CronPage() {
         <TriangleField />
         <div className="relative mx-auto max-w-6xl px-6 pb-14 pt-8 sm:px-10 sm:pb-16 sm:pt-12">
           <Breadcrumb crumb={tool.crumb} />
-
-          {/* One H1, leading with the target keyword. */}
           <h1 className="mt-6 max-w-[18ch] font-display text-[44px] font-bold leading-[0.96] tracking-[-0.04em] text-white sm:text-[68px]">
             Free Cron Expression Parser
           </h1>
@@ -78,9 +72,6 @@ export default function CronPage() {
           </div>
         </div>
       </section>
-
-      {/* Supporting content: ~540 words of genuinely useful copy. This is what
-          separates a page that ranks from a thin tool page that gets filtered. */}
       <article className="mx-auto max-w-6xl px-6 pb-16 sm:px-10">
         <div className="max-w-[72ch] border-t border-line pt-14">
           <h2 className="font-display text-[30px] font-bold tracking-[-0.035em] text-white sm:text-[38px]">

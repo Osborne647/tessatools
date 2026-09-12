@@ -1,8 +1,5 @@
 "use client";
 
-// The full YAML ↔ JSON converter. Both directions are live as you type, and
-// whichever pane you edit becomes the source of truth.
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EMIT_DEFAULTS, parseYaml, stats as computeStats, toYaml } from "@/lib/yaml";
 import { parseJson } from "@/lib/json";
@@ -58,8 +55,6 @@ export default function YamlTool() {
   const toJson = direction === "yaml-to-json";
   const source = toJson ? yamlSrc : jsonSrc;
 
-  // Convert in whichever direction is active. Each branch reports its own
-  // parser's error, so the message always matches the language you typed.
   const result = useMemo(() => {
     if (!source.trim()) return { text: "", error: null as string | null, line: null as number | null };
 
@@ -102,7 +97,6 @@ export default function YamlTool() {
     [],
   );
 
-  /** Swaps direction and feeds the output back in as the new input. */
   function flip() {
     if (result.text && !result.error) {
       if (toJson) setJsonSrc(result.text);
@@ -142,7 +136,6 @@ export default function YamlTool() {
         dragging ? "ring-2 ring-teal" : ""
       }`}
     >
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-7">
         <div className="flex items-center gap-1 bg-navy p-1">
           <button
@@ -228,7 +221,6 @@ export default function YamlTool() {
       </div>
 
       <div className="grid md:grid-cols-[1fr_auto_1fr]">
-        {/* Source */}
         <div className="bg-facet-2">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">
@@ -269,7 +261,6 @@ export default function YamlTool() {
           </div>
         </div>
 
-        {/* Swap */}
         <div className="flex items-center justify-center bg-facet-2 py-2 md:py-0">
           <button
             type="button"
@@ -294,7 +285,6 @@ export default function YamlTool() {
           </button>
         </div>
 
-        {/* Output */}
         <div className="bg-facet-3">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">

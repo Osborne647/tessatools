@@ -1,8 +1,5 @@
 "use client";
 
-// The full Markdown to HTML converter: live preview, raw HTML output, and a
-// document outline. The page's only client component.
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULTS, markdownToHtml, outline, stats as computeStats } from "@/lib/markdown";
 
@@ -65,7 +62,6 @@ export default function MarkdownTool() {
   }, []);
 
   function download() {
-    // A complete, standalone document rather than a naked fragment.
     const doc = `<!doctype html>
 <html lang="en">
 <head>
@@ -103,7 +99,6 @@ ${html}
         dragging ? "ring-2 ring-teal" : ""
       }`}
     >
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-3.5 sm:px-7">
         <div className="flex items-center gap-1 bg-navy p-1">
           {(["preview", "html"] as const).map((v) => (
@@ -166,7 +161,6 @@ ${html}
       </div>
 
       <div className="grid lg:grid-cols-2">
-        {/* Markdown source */}
         <div className="bg-facet-2">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">
@@ -201,7 +195,6 @@ ${html}
           </div>
         </div>
 
-        {/* Rendered preview or raw HTML */}
         <div className="bg-facet-3">
           <div className="flex items-center justify-between px-5 pt-4 sm:px-7">
             <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-sub">
@@ -239,9 +232,6 @@ ${html}
                 <code>{html}</code>
               </pre>
             ) : html ? (
-              // Safe: every text node was escaped during conversion and only an
-              // allowlist of tags can be produced, so no markup from the source
-              // document survives as live HTML.
               <div
                 className="md-preview text-[14.5px] leading-[1.75] text-muted"
                 dangerouslySetInnerHTML={{ __html: html }}

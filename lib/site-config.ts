@@ -1,7 +1,3 @@
-// Single source of truth for SEO. Every tool page reads from here, so you never
-// hand-author metadata twice. Add a tool to `tools` and its page, sitemap entry,
-// and JSON-LD all come along for free.
-
 export const site = {
   name: "Tessacode Tools",
   brand: "Tessacode Solutions",
@@ -22,15 +18,10 @@ export type Tool = {
   slug: string;
   n: string;
   name: string;
-  /** H1 on the tool page. Leads with the target keyword. */
   h1: string;
-  /** 120-160 chars. Keyword appears naturally, not stuffed. */
   metaDescription: string;
-  /** Card copy on the homepage grid. */
   desc: string;
-  /** Action label on the homepage card. Verb-first, and unique per tool. */
   cta: string;
-  /** Short breadcrumb label. Acronyms stay capitalised. */
   crumb: string;
   keyword: string;
   status: "live" | "soon";
@@ -388,7 +379,6 @@ export const tools: Tool[] = [
 
 export const getTool = (slug: string) => tools.find((t) => t.slug === slug);
 
-/** JSON-LD for a tool page. Drop into a <script type="application/ld+json">. */
 export function toolJsonLd(tool: Tool) {
   return {
     "@context": "https://schema.org",
@@ -402,7 +392,6 @@ export function toolJsonLd(tool: Tool) {
   };
 }
 
-/** FAQPage JSON-LD. This is what feeds AI Overviews and rich results. */
 export function faqJsonLd(faqs: Faq[]) {
   return {
     "@context": "https://schema.org",

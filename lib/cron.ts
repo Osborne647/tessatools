@@ -1,34 +1,22 @@
-// Cron expression parsing, plain-English description, and next-run calculation.
-// Dependency-free, and timezone-aware through Intl rather than a date library.
-//
-// The subtle part is not the syntax, it is the day-of-month / day-of-week rule:
-// when BOTH fields are restricted, cron matches a day if EITHER field matches,
-// not both. Almost every naive implementation gets this backwards.
-
 export type FieldName = "minute" | "hour" | "dom" | "month" | "dow";
 
 export type Field = {
   name: FieldName;
-  /** Every value this field matches, sorted. */
   values: number[];
-  /** True when the field was "*" (or an equivalent full range). */
   wildcard: boolean;
   raw: string;
 };
 
 export type CronError = {
   message: string;
-  /** Which of the five fields failed, when known. */
   field: FieldName | null;
   hint: string | null;
 };
 
 export type Parsed = {
   fields: Record<FieldName, Field>;
-  /** Normalised five-field expression. */
   normalized: string;
   description: string;
-  /** True when the schedule fires more than once an hour. */
   frequent: boolean;
 };
 
@@ -50,7 +38,6 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-/** Named shorthands accepted by most cron implementations. */
 export const ALIASES: Record<string, string> = {
   "@yearly": "0 0 1 1 *",
   "@annually": "0 0 1 1 *",
@@ -106,18 +93,10 @@ export function parseCron(input: string): ParseResult {
   return { ok: true, value };
 }
 
-/**
- * The next N times the schedule fires, as epoch milliseconds.
- *
- * Walks forward minute by minute from `from`, in the given timezone, skipping
- * whole days and hours when they cannot match. Capped so a schedule like
- * "0 0 30 2 *" (30 February, which never occurs) terminates instead of looping.
- */
 export function nextRuns(parsed: Parsed, tz: string, count = 5, from = Date.now()): number[] {
   const out: number[] = [];
   const { fields } = parsed;
 
-  // Start at the next whole minute.
   let cursor = Math.floor(from / 60000) * 60000 + 60000;
   const limit = from + 5 * 366 * 24 * 60 * 60 * 1000;
 
@@ -125,7 +104,6 @@ export function nextRuns(parsed: Parsed, tz: string, count = 5, from = Date.now(
     const p = partsIn(cursor, tz);
 
     if (!fields.month.values.includes(p.month)) {
-      // Jump to the first minute of the next month.
       cursor = startOfNextMonth(cursor, tz);
       continue;
     }
@@ -149,10 +127,6 @@ export function nextRuns(parsed: Parsed, tz: string, count = 5, from = Date.now(
   return out;
 }
 
-/**
- * The day-of-month / day-of-week intersection rule from the crontab spec:
- * if both fields are restricted, a day matches when EITHER does.
- */
 export function matchesDay(
   fields: Record<FieldName, Field>,
   dom: number,
@@ -166,8 +140,6 @@ export function matchesDay(
   if (fields.dow.wildcard) return domMatch;
   return domMatch || dowMatch;
 }
-
-// --- field parsing ----------------------------------------------------------
 
 function parseField(
   name: FieldName,
@@ -187,7 +159,6 @@ function parseField(
       };
     }
 
-    // step: <range>/<n>
     const [rangePart, stepPart, ...extra] = piece.split("/");
     if (extra.length) {
       return {
@@ -228,7 +199,6 @@ function parseField(
       }
       lo = av;
       hi = bv;
-      // Wrapping ranges like fri-mon are legal in the day and month fields.
       if (lo > hi) {
         for (let v = lo; v <= max; v += step) values.add(v);
         for (let v = min; v <= hi; v += step) values.add(v);
@@ -266,14 +236,12 @@ function parseField(
     field: {
       name,
       values: sorted,
-      // "*" and "0-59" describe the same set, and both read as "every".
       wildcard: raw === "*" || full,
       raw,
     },
   };
 }
 
-/** Accepts numbers, three-letter month and day names, and 7 for Sunday. */
 function toNumber(token: string, name: FieldName): number | null {
   const t = token.trim();
   if (/^\d+$/.test(t)) {
@@ -311,15 +279,12 @@ function badValue(token: string, name: FieldName): CronError {
 const label = (n: FieldName) =>
   ({ minute: "minute", hour: "hour", dom: "day of month", month: "month", dow: "day of week" })[n];
 
-// --- description ------------------------------------------------------------
 
 function describe(f: Record<FieldName, Field>): string {
   const time = describeTime(f.minute, f.hour);
   const day = describeDay(f.dom, f.dow);
   const month = f.month.wildcard ? "" : `in ${list(f.month.values.map((m) => MONTH_NAMES[m - 1]))}`;
 
-  // "every day" is implied by an unrestricted day field, so leave it out
-  // rather than padding every description with it.
   const parts = [time, day, month].filter(Boolean);
   return capitalize(parts.join(", ").replace(/\s+/g, " ").trim());
 }
@@ -345,7 +310,6 @@ function describeTime(minute: Field, hour: Field): string {
     return `every ${minuteStep} minutes ${hourWindow(hour, hourStep)}`;
   }
 
-  // Specific minutes.
   if (everyHour) {
     return minute.values.length === 1 && minute.values[0] === 0
       ? "every hour, on the hour"
@@ -359,7 +323,6 @@ function describeTime(minute: Field, hour: Field): string {
     return `every ${hourStep} hours, ${at}`;
   }
 
-  // Fully specific: enumerate the clock times, unless that would be absurd.
   const times = hour.values.flatMap((h) => minute.values.map((m) => clock(h, m)));
   if (times.length <= 6) return `at ${list(times)}`;
 
@@ -372,7 +335,6 @@ function hourWindow(hour: Field, step: number | null): string {
   if (step) return `of every ${step} hours`;
   if (hour.values.length === 1) return `of the ${clock(hour.values[0], 0).replace(":00", "")} hour`;
 
-  // A contiguous run reads much better as a range.
   const contiguous = hour.values.every((v, i) => i === 0 || v === hour.values[i - 1] + 1);
   if (contiguous && hour.values.length > 2) {
     const a = clock(hour.values[0], 0).replace(":00", "");
@@ -395,13 +357,11 @@ function describeDay(dom: Field, dow: Field): string {
   const domText = domStep ? `every ${ordinal(domStep)} day` : `on the ${list(dom.values.map(ordinal))}`;
   const dowText = dowStep ? `every ${ordinal(dowStep)} weekday` : `on ${dayList(dow.values)}`;
 
-  // Both restricted: cron ORs them, which is worth spelling out explicitly.
   if (!anyDom && !anyDow) return `${domText} and ${dowText}, whichever matches`;
 
   return anyDom ? dowText : domText;
 }
 
-/** "Monday through Friday" beats listing five day names. */
 function dayList(values: number[]): string {
   const contiguous = values.every((v, i) => i === 0 || v === values[i - 1] + 1);
   if (contiguous && values.length > 2) {
@@ -410,12 +370,6 @@ function dayList(values: number[]): string {
   return list(values.map((d) => DAY_NAMES[d]));
 }
 
-// Returns the step size when a field was written as a step over the whole
-// range, such as a star followed by slash five.
-//
-// This inspects the raw text rather than inferring from the value set, because
-// the two are not equivalent: on the day-of-week field, "6,0" and a star-slash-6
-// step both resolve to {0, 6}, but only the step means "every 6 days".
 function stepOf(field: Field, min: number, max: number): number | null {
   const m = /^\*\/(\d+)$/.exec(field.raw);
   if (!m) return null;
@@ -424,8 +378,6 @@ function stepOf(field: Field, min: number, max: number): number | null {
   if (gap < 2 || gap > max - min) return null;
   return gap;
 }
-
-// --- formatting helpers -----------------------------------------------------
 
 function clock(h: number, m: number): string {
   const suffix = h < 12 ? "AM" : "PM";
@@ -454,9 +406,6 @@ function fail(message: string, field: FieldName | null, hint: string | null): Pa
   return { ok: false, error: { message, field, hint } };
 }
 
-// --- timezone helpers -------------------------------------------------------
-
-/** Wall-clock parts of an instant, in a given zone. */
 export function partsIn(ms: number, tz: string) {
   const p = new Intl.DateTimeFormat("en-US", {
     timeZone: tz,
@@ -476,7 +425,6 @@ export function partsIn(ms: number, tz: string) {
     year: Number(get("year")),
     month: Number(get("month")),
     dom: Number(get("day")),
-    // Intl renders midnight as hour 24 in some engines; normalize it.
     hour: Number(get("hour")) % 24,
     minute: Number(get("minute")),
     dow: Math.max(0, DAYS.indexOf(weekday)),
@@ -498,7 +446,6 @@ export function formatRun(ms: number, tz: string): string {
 
 function startOfNextDay(ms: number, tz: string): number {
   const p = partsIn(ms, tz);
-  // Advance past the remainder of this local day, then align to the minute.
   const remaining = (23 - p.hour) * 3600000 + (60 - p.minute) * 60000;
   return Math.floor((ms + remaining) / 60000) * 60000;
 }
@@ -506,7 +453,6 @@ function startOfNextDay(ms: number, tz: string): number {
 function startOfNextMonth(ms: number, tz: string): number {
   let cursor = ms;
   const start = partsIn(ms, tz).month;
-  // Step a day at a time: cheap, and correct across DST and month lengths.
   for (let i = 0; i < 32; i += 1) {
     cursor = startOfNextDay(cursor, tz);
     if (partsIn(cursor, tz).month !== start) break;

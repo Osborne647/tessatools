@@ -1,7 +1,3 @@
-// JWT decoding and optional signature verification, all client-side. A token
-// pasted here is often a live production credential, so nothing may leave the
-// tab — that constraint shapes the whole module.
-
 export type Segment = { raw: string; json: unknown; text: string };
 
 export type ClaimNote = {
@@ -21,11 +17,9 @@ export type DecodedJwt = {
   claims: ClaimNote[];
   expired: boolean | null;
   notYetValid: boolean;
-  /** Set when the token is structurally broken. */
   error: string | null;
 };
 
-/** base64url → text. Tolerates missing padding, which JWTs always omit. */
 export function decodeSegment(part: string): string {
   let s = part.replace(/-/g, "+").replace(/_/g, "/");
   if (s.length % 4) s += "=".repeat(4 - (s.length % 4));
@@ -87,12 +81,6 @@ export function decodeJwt(token: string, now = Date.now()): DecodedJwt | { error
   };
 }
 
-/**
- * Verifies an HS256/384/512 signature with the Web Crypto API. Only symmetric
- * algorithms can be checked this way, because you hold the same secret the
- * signer used. RS/ES tokens need the issuer's public key and a JWKS fetch,
- * which would mean sending data off-device — so we do not offer it.
- */
 export async function verifyHmac(
   token: string,
   secret: string,
@@ -132,7 +120,6 @@ export async function verifyHmac(
     : { ok: false, reason: "signature does not match this secret" };
 }
 
-/** Algorithms worth warning about, separate from signature validity. */
 export function algorithmWarning(alg: string | null): string | null {
   if (!alg) return "The header declares no algorithm, which is not valid.";
   if (alg.toLowerCase() === "none") {
@@ -144,7 +131,6 @@ export function algorithmWarning(alg: string | null): string | null {
   return null;
 }
 
-// ---------------------------------------------------------------------------
 
 function readSegment(part: string): Segment {
   const text = decodeSegment(part);
@@ -204,8 +190,6 @@ function describeClaims(p: Record<string, unknown>, nowSec: number): ClaimNote[]
     notes.push({ key, label: REGISTERED[key], detail, state });
   }
 
-  // Anything left is a custom claim: worth surfacing, since that is usually
-  // where the interesting application data lives.
   const known = new Set(Object.keys(REGISTERED));
   const custom = Object.keys(p).filter((k) => !known.has(k));
   if (custom.length) {

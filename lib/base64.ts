@@ -8,20 +8,16 @@ export function encodeBase64(text: string, urlSafe = false): string {
   return urlSafe ? toUrlSafe(out) : out;
 }
 
-/** Returns null when the input is not valid Base64, rather than throwing. */
 export function decodeBase64(text: string): string | null {
   try {
     const binary = atob(normalize(text));
     const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
-    // fatal: true makes invalid UTF-8 throw instead of silently returning
-    // replacement characters, which would look like a successful decode.
     return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   } catch {
     return null;
   }
 }
 
-/** Encodes raw bytes (from a File) without going through a string first. */
 export function encodeBytes(bytes: Uint8Array, urlSafe = false): string {
   let binary = "";
   // Chunked to avoid blowing the argument limit on String.fromCharCode with
@@ -36,7 +32,6 @@ export function encodeBytes(bytes: Uint8Array, urlSafe = false): string {
 
 export const byteLength = (text: string) => new TextEncoder().encode(text).length;
 
-/** Cheap structural check so we can explain *why* a decode failed. */
 export function diagnose(text: string): string | null {
   const cleaned = text.replace(/\s+/g, "");
   if (!cleaned) return null;

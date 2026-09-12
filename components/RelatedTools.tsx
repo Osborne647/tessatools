@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { tools } from "@/lib/site-config";
 
-// Internal linking: every tool page points at three siblings, so crawl depth
-// stays shallow and link equity spreads across the set.
 export default function RelatedTools({ current, slugs }: { current: string; slugs: string[] }) {
   const related = slugs
     .map((slug) => tools.find((t) => t.slug === slug))
